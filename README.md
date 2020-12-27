@@ -57,7 +57,9 @@ In [config](./config.yaml) there are three changes:
 
 ### Attribution
 
-We copied a lot of the yaml from several different GitHub issues. Thank you!
+> Thank you!
+
+We copied a lot of the yaml from several different GitHub issues / docs including [fluentbit docs](https://docs.fluentbit.io/manual/installation/kubernetes)
 
 ## Contributing
 
