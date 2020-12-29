@@ -1,8 +1,12 @@
-# Fluent Bit with CRI Log and JSON
+# Fluent Bit with containerd, CRI-O and JSON
 
-With `dockerd` deprecated as a Kubernetes container runtime, we moved to `containerd`. After the change, our `fluentbit` logging didn't parse our JSON logs correctly. containerd uses the `CRI Log` format which is slightly different and requires additional parsing to parse JSON application logs.
+With `dockerd` deprecated as a Kubernetes container runtime, we moved to `containerd`. After the change, our `fluentbit` logging didn't parse our JSON logs correctly. `containerd` and `CRI-O` use the `CRI Log` format which is slightly different and requires additional parsing to parse JSON application logs.
 
 We couldn't find a good end-to-end example, so we created this from various GitHub issues. There are some features missing (like multi-line logs) and we love PRs.
+
+## Enhancement
+
+The original version of this repo used a separate filter to parse the JSON. By changing the cri parser to use the `log` field instead of the `message` field, the `kubernetes filter` converts the JSON if `Merge_Log` is set to `On`
 
 ## Sample Config
 
@@ -10,40 +14,30 @@ We couldn't find a good end-to-end example, so we created this from various GitH
 
 > You will need to change the `output` `match` from `myapp*.*`
 
-### Log Changes
+### Config Changes
 
-> Note - there are several GitHub discussions on the challenges with multi-line CRI Logs
+> Note - there are several GitHub discussions on the challenges with multi-line CRI Logs - additional processing is necessary and not included here
 
-In [config](./config.yaml) there are three changes:
+In [config](./config.yaml) there are two changes:
 
-- Add the CRI parser which is a regex parser that maps the CRI Log fields into `time` `stream` `logtag` and `message`
+- Add the CRI parser which is a regex parser that maps the CRI Log fields into `time` `stream` `logtag` and `log`
   - `time` and `stream` map to existing `dockerd` log fields
-  - `message` contains the text of the message, which, in our case is JSON
+  - `log` contains the text of the message, which, in our case is JSON
+    - The JSON is parsed and merged in the `kubernetes filter`
+      - `Merge_Log` must be set to `On`
 
 ```yaml
 
 [PARSER]
     Name        cri
     Format      regex
-    Regex       ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[^ ]*) (?<message>.*)$
+    Regex       ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[^ ]*) (?<log>.*)$
     Time_Key    time
     Time_Format %Y-%m-%dT%H:%M:%S.%L%z
 
 ```
 
-- Add a `filter` that parses the JSON from the `message` field
-
-```yaml
-
-[FILTER]
-    Name      cri
-    Match     kube.*
-    Key_Name  message
-    Parser    json
-
-```
-
-- Change the `Parser` on the input from `json` (or `docker`) to the `cri` parser
+- Change the `Parser` on the input from `json` or `docker` to the `cri` parser
 
 ```yaml
 
