@@ -8,7 +8,7 @@ We couldn't find a good end-to-end example, so we created this from various GitH
 
 The original version of this repo used a separate filter to parse the JSON. By changing the cri parser to use the `log` field instead of the `message` field, the `kubernetes filter` converts the JSON if `Merge_Log` is set to `On`
 
-We also had to add to `lift` filters to the config to get the Kubernetes values to the root level.
+We also had to add two `nest filters` to the config to `lift` the Kubernetes values to the root level.
 
 ## Sample Config
 
