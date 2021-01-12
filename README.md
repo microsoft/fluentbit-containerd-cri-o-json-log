@@ -8,6 +8,8 @@ We couldn't find a good end-to-end example, so we created this from various GitH
 
 The original version of this repo used a separate filter to parse the JSON. By changing the cri parser to use the `log` field instead of the `message` field, the `kubernetes filter` converts the JSON if `Merge_Log` is set to `On`
 
+We also had to add to `lift` filters to the config to get the Kubernetes values to the root level.
+
 ## Sample Config
 
 [config.yaml](./config.yaml) contains a complete and minimal example configuration using `stdout`. We have tested with `stdout` and `Azure Log Analytics`. While not tested, it should work with `Elastic Search` and outher `output` providers as well.
@@ -18,13 +20,15 @@ The original version of this repo used a separate filter to parse the JSON. By c
 
 > Note - there are several GitHub discussions on the challenges with multi-line CRI Logs - additional processing is necessary and not included here
 
-In [config](./config.yaml) there are two changes:
+In [config](./config.yaml) there are three changes:
 
 - Add the CRI parser which is a regex parser that maps the CRI Log fields into `time` `stream` `logtag` and `log`
   - `time` and `stream` map to existing `dockerd` log fields
   - `log` contains the text of the message, which, in our case is JSON
     - The JSON is parsed and merged in the `kubernetes filter`
       - `Merge_Log` must be set to `On`
+
+> Note the regex expression uses `log` for the 4th field, not `message`
 
 ```yaml
 
@@ -37,7 +41,27 @@ In [config](./config.yaml) there are two changes:
 
 ```
 
-- Change the `Parser` on the input from `json` or `docker` to the `cri` parser
+- Add the `nest filters` to `lift` the Kubernetes values to the root document
+
+```yaml
+
+    [FILTER]
+        Name          nest
+        Match         kube.*
+        Operation     lift
+        Nested_under  kubernetes
+        Add_prefix    kubernetes_
+
+    [FILTER]
+        Name          nest
+        Match         kube.*
+        Operation     lift
+        Nested_under  kubernetes_labels
+        Add_prefix    kubernetes_labels_
+
+```
+
+- Change the `Parser` on the input from `json` or `docker` to `cri`
 
 ```yaml
 
