@@ -37,6 +37,11 @@ data:
 
   filter-kubernetes.conf: |
     [FILTER]
+        Name    modify
+        Match   kube.*
+        Rename  message log
+  
+    [FILTER]
         Name                kubernetes
         Match               kube.*
         Kube_URL            https://kubernetes.default.svc:443
@@ -81,7 +86,7 @@ data:
         Time_Keep Off
 
     [PARSER]
-        Name        cri
+        Name        cri-log
         Format      regex
         Regex       ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[^ ]*) (?<log>.*)$
         Time_Key    time
